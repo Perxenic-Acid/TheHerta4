@@ -82,7 +82,13 @@ class GlobalProperties(bpy.types.PropertyGroup):
 
     recalculate_tangent: bpy.props.BoolProperty(
         name="向量归一化法线存入TANGENT(全局)",
-        description="使用向量相加归一化重计算所有模型的TANGENT值，勾选此项后无法精细控制具体某个模型是否计算，是偷懒选项,在不勾选时默认使用右键菜单中标记的选项。\n用途:\n1.一般用于修复GI角色,HI3 1.0角色,HSR角色轮廓线。\n2.用于修复模型由于TANGENT不正确导致的黑色色块儿问题，比如HSR的薄裙子可能会出现此问题。",
+        description="轮廓线专用：将平滑法线写入 TANGENT，而不是生成标准切线空间。使用法线贴图或标准 TBN 光照时不要开启；“重新计算标准切线(TBN)”启用时本选项不会生效。",
+        default=False,
+    ) # type: ignore
+
+    recalculate_tangent_basis: bpy.props.BoolProperty(
+        name="重新计算标准切线(TBN)",
+        description="导出时使用 TEXCOORD.xy（不存在时使用活动 UV）重新计算 Blender 标准切线，并忽略导入时保存的旧 TANGENT。修改平滑或自定义法线后、以及使用法线贴图时建议开启。",
         default=False,
     ) # type: ignore
 
@@ -244,6 +250,10 @@ class GlobalProperties(bpy.types.PropertyGroup):
     @classmethod
     def recalculate_tangent(cls):
         return cls._instance().recalculate_tangent
+
+    @classmethod
+    def recalculate_tangent_basis(cls):
+        return cls._instance().recalculate_tangent_basis
 
     @classmethod
     def recalculate_color(cls):

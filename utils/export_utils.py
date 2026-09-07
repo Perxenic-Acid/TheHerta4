@@ -67,6 +67,23 @@ class WWMIBufferBuildResult:
 
 class ExportUtils:
     @staticmethod
+    def recalculate_mesh_tangents(mesh: bpy.types.Mesh) -> None:
+        """Refresh loop tangents from the canonical game UV before export."""
+        if len(mesh.polygons) == 0:
+            return
+
+        uvmap = ""
+        uv_layers = getattr(mesh, "uv_layers", None)
+        if uv_layers is not None and "TEXCOORD.xy" in uv_layers:
+            uvmap = "TEXCOORD.xy"
+
+        try:
+            mesh.calc_tangents(uvmap=uvmap)
+        except RuntimeError:
+            ObjUtils.mesh_triangulate(mesh)
+            mesh.calc_tangents(uvmap=uvmap)
+
+    @staticmethod
     def build_obj_element_context(
         d3d11_game_type: D3D11GameType,
         obj: Optional[bpy.types.Object] = None,
@@ -78,12 +95,7 @@ class ExportUtils:
         ShapeKeyUtils.reset_all_shapekey_values(resolved_obj)
 
         mesh = ObjUtils.get_mesh_evaluate_from_obj(obj=resolved_obj)
-        if len(mesh.polygons) > 0:
-            try:
-                mesh.calc_tangents()
-            except RuntimeError:
-                ObjUtils.mesh_triangulate(mesh)
-                mesh.calc_tangents()
+        ExportUtils.recalculate_mesh_tangents(mesh)
 
         original_elementname_data_dict = ObjBufferHelper.parse_elementname_data_dict(
             mesh=mesh,
@@ -228,7 +240,7 @@ class ExportUtils:
                 shapekey.value = 1.0
 
                 mesh_eval = ObjUtils.get_mesh_evaluate_from_obj(obj=obj)
-                mesh_eval.calc_tangents()
+                ExportUtils.recalculate_mesh_tangents(mesh_eval)
 
                 shape_key_buffer_dict[shapekey_name] = ExportUtils.build_shape_key_buffer_result(
                     name=shapekey_name,
@@ -372,12 +384,7 @@ class ExportUtils:
                 shapekey.value = 1.0
 
                 mesh_eval = ObjUtils.get_mesh_evaluate_from_obj(obj=obj)
-                if len(mesh_eval.polygons) > 0:
-                    try:
-                        mesh_eval.calc_tangents()
-                    except RuntimeError:
-                        ObjUtils.mesh_triangulate(mesh_eval)
-                        mesh_eval.calc_tangents()
+                ExportUtils.recalculate_mesh_tangents(mesh_eval)
 
                 element_data = ObjBufferHelper.parse_elementname_data_dict(
                     mesh=mesh_eval,

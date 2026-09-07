@@ -19,6 +19,7 @@ from .raw_vertex_attributes import (
     RAW_NORMAL_W_ATTRIBUTE_PREFIX,
     RAW_TANGENT_ATTRIBUTE_PREFIX,
     load_raw_bytes,
+    should_use_raw_tangents,
 )
 from ..utils.obj_utils import ObjUtils
 from ..utils.log_utils import LOG
@@ -546,10 +547,15 @@ class ObjBufferHelper:
                 if has_encoded_data and (GlobalConfig.logic_name == LogicName.EFMI ):
                     pass
                 else:
-                    data = ObjBufferHelper._load_raw_point_element(
+                    raw_tangent_data = ObjBufferHelper._load_raw_point_element(
                         mesh, RAW_TANGENT_ATTRIBUTE_PREFIX, d3d11_element, loop_vertex_indices
                     )
-                    if data is None:
+                    if should_use_raw_tangents(
+                        raw_tangent_data,
+                        GlobalProperties.recalculate_tangent_basis(),
+                    ):
+                        data = raw_tangent_data
+                    else:
                         data = ObjBufferHelper._parse_tangent(mesh_loops, mesh_loops_length, d3d11_element)
 
             elif d3d11_element_name.startswith('BINORMAL'):
@@ -861,6 +867,10 @@ class ObjBufferHelper:
 
         if D3D11Semantic.TANGENT not in d3d11_game_type.OrderedFullElementList:
             return indexed_vertices
+        # Standard tangent-space export and outline-in-TANGENT are mutually
+        # exclusive.  Preserve the standard TBN when explicitly requested.
+        if GlobalProperties.recalculate_tangent_basis():
+            return indexed_vertices
         allow_calc = False
         if GlobalProperties.recalculate_tangent():
             allow_calc = True
@@ -928,6 +938,8 @@ class ObjBufferHelper:
         这里只替换 xyz，w 仍保持当前导出路径的处理习惯。
         '''
         if D3D11Semantic.TANGENT not in d3d11_game_type.OrderedFullElementList:
+            return indexed_vertices
+        if GlobalProperties.recalculate_tangent_basis():
             return indexed_vertices
 
         allow_calc = False

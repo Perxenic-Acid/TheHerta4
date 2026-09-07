@@ -524,7 +524,7 @@ class RecalculateTANGENTWithVectorNormalizedNormal(bpy.types.Operator):
     bl_idname = "object.recalculate_tangent_arithmetic_average_normal"
     bl_options = {'REGISTER', 'UNDO'}
     bl_label = "使用向量相加归一化算法重计算TANGENT"
-    bl_description = "近似修复轮廓线算法，可以达到99%的轮廓线相似度，适用于GI,HSR,ZZZ,HI3 2.0之前的老角色" 
+    bl_description = "轮廓线专用：将近似平滑法线写入 TANGENT，适用于 GI、HSR、ZZZ、HI3 2.0 之前的老角色；它不是标准切线，使用法线贴图或 TBN 光照时不要开启"
     def execute(self, context):
         for obj in bpy.context.selected_objects:
             if obj.type == "MESH":

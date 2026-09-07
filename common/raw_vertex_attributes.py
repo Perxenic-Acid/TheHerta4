@@ -8,6 +8,11 @@ RAW_NORMAL_W_ATTRIBUTE_PREFIX = "3DMigoto:RawNORMALW"
 RAW_COLOR_ALPHA_ATTRIBUTE_PREFIX = "3DMigoto:RawCOLORA"
 
 
+def should_use_raw_tangents(raw_data, recalculate_tangent_basis: bool) -> bool:
+    """Return whether imported tangent bytes should override Blender tangents."""
+    return raw_data is not None and not recalculate_tangent_basis
+
+
 def _attribute_name(prefix: str, word_index: int) -> str:
     return f"{prefix}:{word_index}"
 
