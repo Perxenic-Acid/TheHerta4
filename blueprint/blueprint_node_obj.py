@@ -769,8 +769,9 @@ class SSMTNode_Result_Output(SSMTNodeBase):
             layout.prop(context.scene.global_properties, "apply_all_modifiers")
             layout.prop(context.scene.global_properties, "export_add_missing_vertex_groups")
 
-        layout.prop(context.scene.global_properties,
-                    "recalculate_tangent_basis", text=iface_("重新计算标准切线(TBN)"))
+        if GlobalConfig.logic_name == LogicName.GIMI:
+            layout.prop(context.scene.global_properties,
+                        "recalculate_tangent_basis", text=iface_("重新计算标准切线(TBN)"))
 
         if GlobalConfig.logic_name != LogicName.GF2:
             layout.prop(context.scene.global_properties,

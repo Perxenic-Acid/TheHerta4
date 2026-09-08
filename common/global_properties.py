@@ -88,7 +88,7 @@ class GlobalProperties(bpy.types.PropertyGroup):
 
     recalculate_tangent_basis: bpy.props.BoolProperty(
         name="重新计算标准切线(TBN)",
-        description="导出时使用 TEXCOORD.xy（不存在时使用活动 UV）重新计算 Blender 标准切线，并忽略导入时保存的旧 TANGENT。修改平滑或自定义法线后、以及使用法线贴图时建议开启。",
+        description="GIMI 专用：导出时使用 TEXCOORD.xy（不存在时使用活动 UV）重新计算 Blender 标准切线，并忽略导入时保存的旧 TANGENT。修改平滑或自定义法线后、以及使用法线贴图时建议开启。",
         default=False,
     ) # type: ignore
 

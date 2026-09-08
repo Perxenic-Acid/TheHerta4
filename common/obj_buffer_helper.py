@@ -539,14 +539,15 @@ class ObjBufferHelper:
                     pass
                 else:
                     data = ObjBufferHelper._parse_normal(mesh_loops, mesh_loops_length, d3d11_element, has_encoded_data)
-                    data = ObjBufferHelper._restore_raw_fourth_component(
-                        mesh, RAW_NORMAL_W_ATTRIBUTE_PREFIX, d3d11_element, loop_vertex_indices, data
-                    )
+                    if GlobalConfig.logic_name == LogicName.GIMI:
+                        data = ObjBufferHelper._restore_raw_fourth_component(
+                            mesh, RAW_NORMAL_W_ATTRIBUTE_PREFIX, d3d11_element, loop_vertex_indices, data
+                        )
 
             elif d3d11_element_name == 'TANGENT':
                 if has_encoded_data and (GlobalConfig.logic_name == LogicName.EFMI ):
                     pass
-                else:
+                elif GlobalConfig.logic_name == LogicName.GIMI:
                     raw_tangent_data = ObjBufferHelper._load_raw_point_element(
                         mesh, RAW_TANGENT_ATTRIBUTE_PREFIX, d3d11_element, loop_vertex_indices
                     )
@@ -557,6 +558,8 @@ class ObjBufferHelper:
                         data = raw_tangent_data
                     else:
                         data = ObjBufferHelper._parse_tangent(mesh_loops, mesh_loops_length, d3d11_element)
+                else:
+                    data = ObjBufferHelper._parse_tangent(mesh_loops, mesh_loops_length, d3d11_element)
 
             elif d3d11_element_name.startswith('BINORMAL'):
                 if has_encoded_data and (GlobalConfig.logic_name == LogicName.EFMI):
@@ -566,13 +569,14 @@ class ObjBufferHelper:
             
             elif d3d11_element_name.startswith('COLOR'):
                 data = ObjBufferHelper._parse_color(mesh, mesh_loops_length, d3d11_element_name, d3d11_element)
-                data = ObjBufferHelper._restore_raw_fourth_component(
-                    mesh,
-                    RAW_COLOR_ALPHA_ATTRIBUTE_PREFIX + ":" + d3d11_element_name,
-                    d3d11_element,
-                    loop_vertex_indices,
-                    data,
-                )
+                if GlobalConfig.logic_name == LogicName.GIMI:
+                    data = ObjBufferHelper._restore_raw_fourth_component(
+                        mesh,
+                        RAW_COLOR_ALPHA_ATTRIBUTE_PREFIX + ":" + d3d11_element_name,
+                        d3d11_element,
+                        loop_vertex_indices,
+                        data,
+                    )
 
             elif d3d11_element_name.startswith('TEXCOORD') and d3d11_element.Format.endswith('FLOAT'):
                 data = ObjBufferHelper._parse_texcoord(mesh, mesh_loops_length, d3d11_element_name, d3d11_element)
@@ -869,7 +873,10 @@ class ObjBufferHelper:
             return indexed_vertices
         # Standard tangent-space export and outline-in-TANGENT are mutually
         # exclusive.  Preserve the standard TBN when explicitly requested.
-        if GlobalProperties.recalculate_tangent_basis():
+        if (
+            GlobalConfig.logic_name == LogicName.GIMI
+            and GlobalProperties.recalculate_tangent_basis()
+        ):
             return indexed_vertices
         allow_calc = False
         if GlobalProperties.recalculate_tangent():
@@ -920,12 +927,16 @@ class ObjBufferHelper:
         normalized_normals = numpy.array([position_normal_dict[pos] for pos in positions])
 
         # 计算 w 并调整 tangent 的第四个分量
-        tangent_dtype = vb['TANGENT'].dtype
-        tangent_values = ObjBufferHelper._decode_normalized_field(vb['TANGENT'])
-        w = numpy.where(tangent_values[:, 3] >= 0, -1.0, 1.0)
-
-        vb['TANGENT'][:, :3] = ObjBufferHelper._encode_normalized_field(normalized_normals, tangent_dtype)
-        vb['TANGENT'][:, 3] = ObjBufferHelper._encode_normalized_field(w, tangent_dtype)
+        if GlobalConfig.logic_name == LogicName.GIMI:
+            tangent_dtype = vb['TANGENT'].dtype
+            tangent_values = ObjBufferHelper._decode_normalized_field(vb['TANGENT'])
+            w = numpy.where(tangent_values[:, 3] >= 0, -1.0, 1.0)
+            vb['TANGENT'][:, :3] = ObjBufferHelper._encode_normalized_field(normalized_normals, tangent_dtype)
+            vb['TANGENT'][:, 3] = ObjBufferHelper._encode_normalized_field(w, tangent_dtype)
+        else:
+            w = numpy.where(vb['TANGENT'][:, 3] >= 0, -1.0, 1.0)
+            vb['TANGENT'][:, :3] = normalized_normals
+            vb['TANGENT'][:, 3] = w
 
         # TimerUtils.End("Recalculate TANGENT")
 
@@ -939,7 +950,10 @@ class ObjBufferHelper:
         '''
         if D3D11Semantic.TANGENT not in d3d11_game_type.OrderedFullElementList:
             return indexed_vertices
-        if GlobalProperties.recalculate_tangent_basis():
+        if (
+            GlobalConfig.logic_name == LogicName.GIMI
+            and GlobalProperties.recalculate_tangent_basis()
+        ):
             return indexed_vertices
 
         allow_calc = False
@@ -960,8 +974,12 @@ class ObjBufferHelper:
             return vb
 
         positions = numpy.asarray(vb['POSITION'], dtype=numpy.float32)
-        tangent_dtype = vb['TANGENT'].dtype
-        tangents = ObjBufferHelper._decode_normalized_field(vb['TANGENT'])
+        is_gimi = GlobalConfig.logic_name == LogicName.GIMI
+        if is_gimi:
+            tangent_dtype = vb['TANGENT'].dtype
+            tangents = ObjBufferHelper._decode_normalized_field(vb['TANGENT'])
+        else:
+            tangents = numpy.asarray(vb['TANGENT'], dtype=numpy.float32)
 
         if positions.ndim != 2 or positions.shape[1] < 3 or tangents.ndim != 2 or tangents.shape[1] < 3:
             return vb
@@ -1033,11 +1051,18 @@ class ObjBufferHelper:
 
         outline_vectors = tangents[:, 0:3].copy()
         outline_vectors[ib_data] = unit_vector(accumulated_normals[unique_inverse])
-        vb['TANGENT'][:, :3] = ObjBufferHelper._encode_normalized_field(outline_vectors, tangent_dtype)
+        if is_gimi:
+            vb['TANGENT'][:, :3] = ObjBufferHelper._encode_normalized_field(outline_vectors, tangent_dtype)
+        else:
+            vb['TANGENT'][:, :3] = outline_vectors
 
         if tangents.shape[1] >= 4:
-            w = numpy.where(tangents[:, 3] >= 0, -1.0, 1.0)
-            vb['TANGENT'][:, 3] = ObjBufferHelper._encode_normalized_field(w, tangent_dtype)
+            if is_gimi:
+                w = numpy.where(tangents[:, 3] >= 0, -1.0, 1.0)
+                vb['TANGENT'][:, 3] = ObjBufferHelper._encode_normalized_field(w, tangent_dtype)
+            else:
+                w = numpy.where(vb['TANGENT'][:, 3] >= 0, -1.0, 1.0)
+                vb['TANGENT'][:, 3] = w
 
         return vb
 
