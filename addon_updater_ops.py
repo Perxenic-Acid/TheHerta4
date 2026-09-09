@@ -75,6 +75,11 @@ except Exception as e:
 # to avoid clashes in operator registration.
 updater.addon = "ssmt_theherta_plugin"
 UPDATER_DISPLAY_NAME = "TheHerta4"
+GITHUB_OWNER = "Perxenic-Acid"
+GITHUB_REPOSITORY = "TheHerta4"
+GITHUB_REPOSITORY_URL = (
+    f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPOSITORY}"
+)
 
 
 # -----------------------------------------------------------------------------
@@ -1275,16 +1280,16 @@ def register(bl_info):
     updater.private_token = None  # "tokenstring"
 
     # Choose your own username, must match website (not needed for GitLab).
-    updater.user = "StarBobis"
+    updater.user = GITHUB_OWNER
 
     # Choose your own repository, must match git name for GitHUb and Bitbucket,
     # for GitLab use project ID (numbers only).
-    updater.repo = "TheHerta4"
+    updater.repo = GITHUB_REPOSITORY
 
     # updater.addon = # define at top of module, MUST be done first
 
     # Website for manual addon download, optional but recommended to set.
-    updater.website = "https://github.com/StarBobis/TheHerta4/releases"
+    updater.website = f"{GITHUB_REPOSITORY_URL}/releases"
 
     # Addon subfolder path.
     # "sample/path/to/addon"
@@ -1381,8 +1386,9 @@ def register(bl_info):
     # Populate if using "include_branches" option above.
     # Note: updater.include_branch_list defaults to ['master'] branch if set to
     # none. Example targeting another multiple branches allowed to pull from:
-    # updater.include_branch_list = ['master', 'dev']
-    updater.include_branch_list = None  # None is the equivalent = ['master']
+    # Keep this aligned with the repository's default branch. This branch is
+    # exposed as an optional install target alongside version tags.
+    updater.include_branch_list = ['main']
 
     # Only allow manual install, thus prompting the user to open
     # the addon's web page to download, specifically: updater.website

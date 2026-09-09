@@ -4,15 +4,15 @@
 <div align="center">
 
 
-[![GitHub stars](https://img.shields.io/github/stars/StarBobis/TheHerta4?style=flat&logo=github&color=gold)](https://github.com/StarBobis/TheHerta4/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/StarBobis/TheHerta4?style=flat&logo=github&color=blue)](https://github.com/StarBobis/TheHerta4/forks)
-[![GitHub issues](https://img.shields.io/github/issues/StarBobis/TheHerta4?style=flat&logo=github&color=red)](https://github.com/StarBobis/TheHerta4/issues)
-[![GitHub license](https://img.shields.io/github/license/StarBobis/TheHerta4?style=flat&color=brightgreen)](https://github.com/StarBobis/TheHerta4/blob/main/LICENSE.txt)
-[![GitHub last commit](https://img.shields.io/github/last-commit/StarBobis/TheHerta4?style=flat&logo=git&color=orange)](https://github.com/StarBobis/TheHerta4/commits/main)
-[![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/StarBobis/TheHerta4/latest/total?style=flat&logo=github&color=blue&label=最新版下载量)](https://github.com/StarBobis/TheHerta4/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/Perxenic-Acid/TheHerta4?style=flat&logo=github&color=gold)](https://github.com/Perxenic-Acid/TheHerta4/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/Perxenic-Acid/TheHerta4?style=flat&logo=github&color=blue)](https://github.com/Perxenic-Acid/TheHerta4/forks)
+[![GitHub issues](https://img.shields.io/github/issues/Perxenic-Acid/TheHerta4?style=flat&logo=github&color=red)](https://github.com/Perxenic-Acid/TheHerta4/issues)
+[![GitHub license](https://img.shields.io/github/license/Perxenic-Acid/TheHerta4?style=flat&color=brightgreen)](https://github.com/Perxenic-Acid/TheHerta4/blob/main/LICENSE.txt)
+[![GitHub last commit](https://img.shields.io/github/last-commit/Perxenic-Acid/TheHerta4?style=flat&logo=git&color=orange)](https://github.com/Perxenic-Acid/TheHerta4/commits/main)
+[![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/Perxenic-Acid/TheHerta4/latest/total?style=flat&logo=github&color=blue&label=最新版下载量)](https://github.com/Perxenic-Acid/TheHerta4/releases/latest)
 [![Blender](https://img.shields.io/badge/Blender-5.2%20LTS-e67e22?style=flat&logo=blender&logoColor=white)](https://www.blender.org/)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
-[![GitHub release](https://img.shields.io/github/v/release/StarBobis/TheHerta4?style=flat-square&logo=github)](https://github.com/StarBobis/TheHerta4/releases)
+[![GitHub release](https://img.shields.io/github/v/release/Perxenic-Acid/TheHerta4?style=flat-square&logo=github)](https://github.com/Perxenic-Acid/TheHerta4/releases)
 [![VibeCoding With DeepSeek V4 Pro](https://img.shields.io/badge/VibeCoding_With-DeepSeek_V4_Pro-4D6BFE?style=flat&logo=deepseek&logoColor=white)](https://deepseek.com/)
 
 </div>
@@ -77,7 +77,7 @@
 
 ### Installation
 
-1. 💾 [Download the latest release](https://github.com/StarBobis/TheHerta4/releases/latest)
+1. 💾 [Download the latest release](https://github.com/Perxenic-Acid/TheHerta4/releases/latest)
 2. 🌀 Open Blender → `Edit` → `Preferences` → `Add-ons`
 3. 📂 Click **Install...** and select the downloaded `.zip`
 4. ✅ Enable **"TheHerta4"** from the add-ons list
@@ -129,7 +129,7 @@ To work on the plugin itself:
 
 <div align="center">
 
-[![Star History Chart](https://api.star-history.com/svg?repos=StarBobis/TheHerta4&type=Date)](https://star-history.com/#StarBobis/TheHerta4&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Perxenic-Acid/TheHerta4&type=Date)](https://star-history.com/#Perxenic-Acid/TheHerta4&Date)
 
 </div>
 
