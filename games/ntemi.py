@@ -554,7 +554,7 @@ class ExportNTEMI:
         for drawib_model in self.drawib_model_list:
             for part_index, submesh_model in enumerate(drawib_model.submesh_model_list):
                 part_name = self._part_name(drawib_model, part_index, submesh_model)
-                token = _resource_token(part_name)
+                token = ExportNTEMI._resource_token(part_name)
 
                 lines.extend([
                     f"{_NTMI_SKIN_T_PALETTE} = ResourcePalette_{token}",
