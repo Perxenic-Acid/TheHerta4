@@ -10,6 +10,7 @@ from ..common.m_ini_helper_gui import M_IniHelperGUI
 from ..common.m_ini_builder import M_IniBuilder,M_IniSection, M_SectionType
 from ..model.drawib_model import DrawIBModel
 from ..blueprint.blueprint_export_helper import BlueprintExportHelper
+from ..utils.srmi_limits import validate_srmi_gpu_vertex_count
 
 import os
 
@@ -24,6 +25,13 @@ class ExportSRMI:
         self.drawib_model_list = self.blueprint_model.parse_drawib_model_list(combine_ib=False)
         for drawib_model in self.drawib_model_list:
             drawib_model.apply_drawib_alias()
+            if drawib_model.d3d11_game_type.GPU_PreSkinning:
+                position_stride = drawib_model.d3d11_game_type.CategoryStrideDict.get("Position", 0)
+                validate_srmi_gpu_vertex_count(
+                    drawib_model.vertex_count,
+                    position_stride,
+                    drawib_model.draw_ib,
+                )
 
     def generate_buffer_files(self):
         buf_output_folder = GlobalConfig.path_generatemod_buffer_folder()

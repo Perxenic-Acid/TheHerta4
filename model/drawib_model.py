@@ -101,7 +101,7 @@ class DrawIBModel:
             )
             self.vertex_limit_hash = self.import_json_dict.get("VertexLimitVB", "")
             self.cs_output_vertex_limit_hash = self.load_cs_output_vertex_limit_hash()
-            self.original_vertex_count = self.import_json_dict.get("OriginalVertexCount", 0)
+            self.original_vertex_count = self._get_original_vertex_count()
             print(
                 "DrawIBModel: 已使用新结构元数据，贴图标记SubMesh数量: "
                 + str(len(self.submesh_texturemarkinfolist_dict))
@@ -109,6 +109,32 @@ class DrawIBModel:
             return
 
         print("DrawIBModel: 未读取到 SubmeshJson 元数据，贴图标记信息为空，DrawIB: " + self.draw_ib)
+
+    def _get_original_vertex_count(self) -> int:
+        metadata_count = int(self.import_json_dict.get("OriginalVertexCount", 0) or 0)
+        if metadata_count > 0:
+            return metadata_count
+
+        submesh_vertex_counts = []
+        for submesh_model in self.submesh_model_list:
+            try:
+                submesh_json = SubmeshJson(
+                    SSMTWorkSpace.check_and_get_submesh_json_path(submesh_model.submesh_name)
+                )
+            except Exception as ex:
+                print(
+                    "DrawIBModel: failed to read original vertex count, SubMesh: "
+                    + submesh_model.submesh_name
+                    + ", error: "
+                    + str(ex)
+                )
+                return 0
+
+            if submesh_json.VertexCount < 0:
+                return 0
+            submesh_vertex_counts.append(submesh_json.VertexCount)
+
+        return sum(submesh_vertex_counts)
 
     def load_cs_output_vertex_limit_hash(self) -> str:
         for submesh_model in self.submesh_model_list:
