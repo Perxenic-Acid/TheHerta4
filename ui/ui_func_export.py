@@ -17,6 +17,7 @@ from ..games.gimi import ExportGIMI
 from ..games.himi import ExportHIMI
 from ..games.identityv import ExportIdentityV
 from ..games.snowbreak import ExportSnowBreak
+from ..games.cami import ExportCAMI
 from ..games.srmi import ExportSRMI
 from ..games.unity import ExportUnity
 from ..games.wwmi import ExportWWMI
@@ -56,6 +57,8 @@ def _export_blueprint_model(blueprint_model):
         ExportNTEMI(blueprint_model=blueprint_model).export()
     elif GlobalConfig.logic_name == LogicName.SnowBreak:
         ExportSnowBreak(blueprint_model=blueprint_model).export()
+    elif GlobalConfig.logic_name == LogicName.CAMI:
+        ExportCAMI(blueprint_model=blueprint_model).export()
     elif GlobalConfig.logic_name == LogicName.YYSLS:
         ExportYYSLS(blueprint_model=blueprint_model).export()
     elif GlobalConfig.logic_name in {
