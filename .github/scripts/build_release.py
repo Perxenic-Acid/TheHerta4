@@ -66,6 +66,16 @@ def main() -> None:
     with zipfile.ZipFile(
         archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=8
     ) as result:
+        # The bundled updater uses os.mkdir() for explicit ZIP directory
+        # entries and does not create parent directories for file entries.
+        # Generate directory entries first, parents before their children.
+        directories = {"TheHerta4/"}
+        for path in files:
+            parts = path.parts[:-1]
+            for depth in range(1, len(parts) + 1):
+                directories.add("TheHerta4/" + "/".join(parts[:depth]) + "/")
+        for directory in sorted(directories, key=lambda name: (name.count("/"), name)):
+            result.writestr(directory, b"")
         for path in files:
             payload = (ROOT / path).read_bytes()
             if path == Path("__init__.py"):
@@ -82,6 +92,14 @@ def main() -> None:
     with zipfile.ZipFile(archive, "r") as result:
         if result.testzip() is not None:
             raise RuntimeError("ZIP integrity validation failed")
+        # Every nested directory must appear before the first file inside it.
+        names = result.namelist()
+        for index, name in enumerate(names):
+            if name.endswith("/"):
+                continue
+            parent = name.rsplit("/", 1)[0] + "/"
+            if parent not in names[:index]:
+                raise RuntimeError(f"Missing preceding ZIP directory: {parent}")
         entry = result.read("TheHerta4/__init__.py").decode("utf-8")
         if f'"version": ({version})' not in entry:
             raise RuntimeError("Packaged bl_info version mismatch")
