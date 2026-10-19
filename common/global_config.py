@@ -43,6 +43,7 @@ class LogicName:
     NarakaM = "NarakaM" # 使用Mod会掉帧/封禁帐号30天/封禁永久
     
     NTEMI = "NTEMI" # 异环，仅测试
+    CAMI = "CAMI" # 卡拉彼丘(Strinova)，UE风格布局+GPU蒙皮，与SnowBreak同族算法
     
     # 预留位置
     APMI = "APMI" # 还在内测的蓝色星原，已在测试服中测试过，完美支持3Dmigoto，预计发布就会被XXMI收录

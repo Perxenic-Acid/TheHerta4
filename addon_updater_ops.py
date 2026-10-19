@@ -1240,6 +1240,15 @@ def select_link_function(self, tag):
     # elif platform.system() == "Linux":
     # 	link = [asset for asset in tag["assets"] if 'linux' in asset][0]
 
+    # Official TheHerta4 packages contain a versioned bl_info. GitHub's
+    # auto-generated source archives do not, because the version is injected
+    # when the Release ZIP is built (without committing version-only changes).
+    # Keep older Releases and branch installs working via the source fallback.
+    for asset in tag.get("assets", []):
+        filename = asset.get("name", "")
+        if filename.startswith("TheHerta4-v") and filename.endswith(".zip"):
+            return asset["browser_download_url"]
+
     return link
 
 
@@ -1376,7 +1385,7 @@ def register(bl_info):
     # which enables pulling down release logs/notes, as well as installs update
     # from release-attached zips (instead of the auto-packaged code generated
     # with a release/tag). Setting has no impact on BitBucket or GitLab repos.
-    updater.use_releases = False
+    updater.use_releases = True
     # Note: Releases always have a tag, but a tag may not always be a release.
     # Therefore, setting True above will filter out any non-annotated tags.
     # Note 2: Using this option will also display (and filter by) the release

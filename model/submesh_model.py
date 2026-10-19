@@ -254,6 +254,16 @@ class SubMeshModel:
             temp_obj.rotation_euler[1] = 0
             temp_obj.rotation_euler[2] = 0
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+
+        elif GlobalConfig.logic_name == LogicName.CAMI:
+            # 卡拉彼丘导出 Rz(180)：与导入侧 Rz(180)（mesh_create_helper）互逆
+            # （自逆旋转，未修改的模型导出后数据不变）；同时还原导入时的
+            # 0.01 缩放（×100），与 SnowBreak 的尺寸约定一致。
+            ObjUtils.select_obj(temp_obj)
+            temp_obj.scale = (100.0, 100.0, 100.0)
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            temp_obj.rotation_euler = (0, 0, math.radians(180))
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
         
         elif GlobalConfig.logic_name == LogicName.NTEMI or GlobalConfig.logic_name == LogicName.SnowBreak:
             # NTEMI/SnowBreak import: Z rotate 180°, scale 0.01 → reverse: scale 100, Z rotate ±180°

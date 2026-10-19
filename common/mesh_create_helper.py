@@ -53,7 +53,6 @@ class MeshCreateHelper:
         wwmi_vg_offset:int = 0,
     ):
         TimerUtils.Start("Import 3Dmigoto Raw")
-        print("导入模型: " + mesh_name)
 
         if vb_vertex_count == 0:
             raise Fatal("VB vertex count is zero, skip import.")
@@ -253,6 +252,15 @@ class MeshCreateHelper:
             obj.rotation_euler[1] = 0
             obj.rotation_euler[2] = 0
 
+        if logic_name == LogicName.CAMI:
+            # 卡拉彼丘导入：实测原始数据为头朝 +Z 的立姿（无需翻正），
+            # 仅朝向与 Blender 预期相差 180°（用户实测），绕竖直轴 Rz(180)
+            # 转正。Rz(180) 为自逆旋转，与导出侧 Rz(180) 构成精确往返。
+            # 尺寸按 SnowBreak 惯例导入缩放 0.01（导出侧还原 ×100），
+            # 由下方 transform_apply 一并烘焙。
+            obj.rotation_euler = (0, 0, math.radians(180))
+            obj.scale = (0.01, 0.01, 0.01)
+
         if GlobalConfig.logic_name == LogicName.WWMI or GlobalConfig.logic_name == LogicName.NTEMI:
             if GlobalProperties.import_skip_empty_vertex_groups():
                 VertexGroupUtils.remove_unused_vertex_groups(obj)
@@ -289,7 +297,7 @@ class MeshCreateHelper:
 
     @staticmethod
     def initialize_mesh(mesh, ib_data, ib_count:int, ib_polygon_count:int, logic_name:str, vb_vertex_count:int):
-        if logic_name == LogicName.WWMI or logic_name == LogicName.NTEMI or logic_name == LogicName.YYSLS or logic_name == LogicName.SnowBreak:
+        if logic_name == LogicName.WWMI or logic_name == LogicName.NTEMI or logic_name == LogicName.YYSLS or logic_name == LogicName.SnowBreak or logic_name == LogicName.CAMI:
             flipped_indices = []
             for i in range(0, len(ib_data), 3):
                 triangle = ib_data[i:i + 3]

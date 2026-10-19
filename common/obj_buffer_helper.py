@@ -515,8 +515,8 @@ class ObjBufferHelper:
             # print("鸣潮专属测试版权重处理：")
             blendweights_dict, blendindices_dict = VertexGroupUtils.get_blendweights_blendindices_v4_fast(mesh=mesh,normalize_weights = normalize_weights,blend_size=blend_size)
 
-        elif GlobalConfig.logic_name == LogicName.SnowBreak:
-            print("尘白禁区权重处理")
+        elif GlobalConfig.logic_name == LogicName.SnowBreak or GlobalConfig.logic_name == LogicName.CAMI:
+            print("尘白禁区/卡拉彼丘权重处理")
             blendweights_dict, blendindices_dict = VertexGroupUtils.get_blendweights_blendindices_v4_fast(mesh=mesh,normalize_weights = normalize_weights,blend_size=blend_size)
         else:
             blendweights_dict, blendindices_dict = VertexGroupUtils.get_blendweights_blendindices_v3(mesh=mesh,normalize_weights = normalize_weights)
@@ -1328,8 +1328,8 @@ class ObjBufferHelper:
 
         # 设置ib，准备返回
         ib = flattened_ib
-        # YYSLS/SnowBreak 需要在导出时翻转面朝向
-        if GlobalConfig.logic_name == LogicName.YYSLS or GlobalConfig.logic_name == LogicName.SnowBreak:
+        # YYSLS/SnowBreak/CAMI 需要在导出时翻转面朝向（与导入侧 initialize_mesh 的翻转互逆）
+        if GlobalConfig.logic_name == LogicName.YYSLS or GlobalConfig.logic_name == LogicName.SnowBreak or GlobalConfig.logic_name == LogicName.CAMI:
             flipped_indices = []
             # print(flattened_ib[0],flattened_ib[1],flattened_ib[2])
             for i in range(0, len(flattened_ib), 3):
