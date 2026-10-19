@@ -1,0 +1,129 @@
+name: Package and release TheHerta4
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      next_minor:
+        description: 'Manual minor release: leave empty for current minor + 1, or enter a higher minor number'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+# One version allocation + release at a time, including manual releases.
+concurrency:
+  group: theherta4-versioned-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build Blender add-on and publish version
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Choose version from published Releases
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_EVENT: ${{ github.event_name }}
+          NEXT_MINOR: ${{ inputs.next_minor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # --slurp combines paginated arrays; do not assume there are fewer than 100 releases.
+          published="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100")"
+          latest="$(jq -r '[.[][] | select(.draft == false) | .tag_name | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))] | .[]' <<<"$published" | sort -V | tail -n 1)"
+          if [[ -z "$latest" ]]; then
+            echo 'No existing vMAJOR.MINOR.PATCH GitHub Release found' >&2
+            exit 1
+          fi
+
+          if [[ ! "$latest" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Invalid latest release version: $latest" >&2
+            exit 1
+          fi
+          major="$((10#${BASH_REMATCH[1]}))"
+          minor="$((10#${BASH_REMATCH[2]}))"
+          patch="$((10#${BASH_REMATCH[3]}))"
+
+          if [[ "$RELEASE_EVENT" == 'workflow_dispatch' ]]; then
+            if [[ -n "$NEXT_MINOR" ]]; then
+              if [[ ! "$NEXT_MINOR" =~ ^[0-9]+$ ]]; then
+                echo 'next_minor must be a nonnegative integer' >&2
+                exit 1
+              fi
+              next_minor="$((10#$NEXT_MINOR))"
+              if (( next_minor <= minor )); then
+                echo "Manual minor version must be greater than $minor" >&2
+                exit 1
+              fi
+            else
+              next_minor="$((minor + 1))"
+            fi
+            tag="v$major.$next_minor.0"
+            kind='manual minor'
+          else
+            tag="v$major.$minor.$((patch + 1))"
+            kind='automatic patch'
+          fi
+
+          # Refuse to overwrite an existing tag, even when its Release is missing.
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "Tag already exists: $tag" >&2
+            exit 1
+          fi
+          echo "Selected $tag ($kind; based on $latest)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+          echo "previous=$latest" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Python syntax
+        run: python -m compileall -q __init__.py addon_updater_ops.py .github/scripts/build_release.py
+
+      - name: Build versioned Blender addon ZIP
+        run: python .github/scripts/build_release.py "${{ steps.version.outputs.tag }}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheHerta4-${{ steps.version.outputs.tag }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_KIND: ${{ steps.version.outputs.kind }}
+          PREVIOUS_TAG: ${{ steps.version.outputs.previous }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$VERSION_TAG" >/dev/null 2>&1; then
+            echo "Release already exists: $VERSION_TAG" >&2
+            exit 1
+          fi
+          gh release create "$VERSION_TAG" \
+            "dist/TheHerta4-$VERSION_TAG.zip" \
+            dist/SHA256SUMS.txt \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION_TAG" \
+            --generate-notes
+
+          {
+            echo "### Published $VERSION_TAG"
+            echo "Release type: $RELEASE_KIND"
+            echo "Previous version: $PREVIOUS_TAG"
+            echo "Source commit: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
