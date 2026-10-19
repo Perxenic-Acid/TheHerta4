@@ -12,7 +12,7 @@ from ..utils.translate_utils import iface_, rpt_
 from .blueprint_export_helper import BlueprintExportHelper
 from .blueprint_node_base import SSMTNodeBase
 from .blueprint_node_shapekey import SSMTShapeKeyListItem
-from ..workspace.ssmt_workspace import WorkSpaceModel
+from ..workspace.ssmt_workspace import SSMTWorkSpace, WorkSpaceModel
 
 OBJECT_PERSISTENT_ID_KEY = "_ssmt_object_uuid"
 
@@ -368,7 +368,8 @@ class SSMTNode_Object_Info(SSMTNodeBase):
 
     def _get_effective_parse_name(self):
         normalized_submesh_name = str(self.submesh_name or "").strip()
-        prefix_name = normalized_submesh_name.partition(".")[0]
+        _, bare_name = SSMTWorkSpace.parse_lod_submesh_name(normalized_submesh_name)
+        prefix_name = bare_name.partition(".")[0]
         # 新格式（2段）或旧格式（>=3段）都是有效的 submesh_name
         if normalized_submesh_name and len(prefix_name.split("-")) >= 2:
             return normalized_submesh_name

@@ -49,6 +49,9 @@ class WorkSpaceModel:
     # DrawIB 别名: draw_ib -> alias_name (从各 LOD 的 Config.json 读取)
     drawib_aliases: Dict[str, str] = field(default_factory=dict)
 
+    # Component 别名按实际目录绑定；编号和路径解析不能依赖可修改的显示名称。
+    component_aliases: Dict[str, Dict[str, str]] = field(default_factory=dict)
+
     # 所有 submesh 的显示名称列表（新格式，带 LOD 前缀和别名），供蓝图下拉列表使用
     all_display_names: List[str] = field(default_factory=list)
 
@@ -116,12 +119,30 @@ class WorkSpaceModel:
 
         return result
 
+    @staticmethod
+    def _read_component_aliases(lod_path: str) -> Dict[str, str]:
+        path = os.path.join(lod_path, "ComponentAliases.json")
+        if not os.path.isfile(path):
+            return {}
+        try:
+            aliases = JsonUtils.LoadFromFile(path)
+            if not isinstance(aliases, dict) or len(aliases) > 4096:
+                raise ValueError("invalid alias map")
+            # 只用已扫描到的目录名查询；别名始终作为显示文本，不得拼接文件路径。
+            return {key: alias.strip() for key, alias in aliases.items()
+                    if isinstance(key, str) and isinstance(alias, str) and alias.strip()
+                    and len(alias) <= 128 and not any(ord(c) < 32 or ord(c) == 127 for c in alias)}
+        except Exception as error:
+            print(f"SSMT: 无法读取 Component 别名，使用默认名称: {path}: {error}")
+            return {}
+
     def _scan(self):
         '''扫描工作空间目录，构建所有映射。'''
         self.lod_components.clear()
         self.lod_reverse.clear()
         self.lod_component_info.clear()
         self.drawib_aliases.clear()
+        self.component_aliases.clear()
         self.all_display_names.clear()
 
         if not self.workspace_path or not os.path.isdir(self.workspace_path):
@@ -141,7 +162,9 @@ class WorkSpaceModel:
             # 兼容旧版无 LOD 结构
             lod_folders = [("", self.workspace_path)]
 
+        self.drawib_aliases.update(self._read_config_json(self.workspace_path))
         for lod_name, lod_path in lod_folders:
+            self.component_aliases[lod_name] = self._read_component_aliases(lod_path)
             # 读取该 LOD 的 Config.json
             if lod_name:
                 self.drawib_aliases.update(self._read_config_json(lod_path))
@@ -159,19 +182,47 @@ class WorkSpaceModel:
                     raw_entries[draw_ib] = []
                 raw_entries[draw_ib].append((entry.name, first_index))
 
+            persisted_components = {}
+            mapping_path = os.path.join(lod_path, "DrawIB-Component.json")
+            if os.path.isfile(mapping_path):
+                try:
+                    value = JsonUtils.LoadFromFile(mapping_path)
+                    if isinstance(value, dict):
+                        persisted_components = value
+                except Exception:
+                    pass
+
             # 按 FirstIndex 排序并分配 Component 序号
             self.lod_components[lod_name] = {}
             self.lod_reverse[lod_name] = {}
             self.lod_component_info[lod_name] = {}
 
             for draw_ib, entries in raw_entries.items():
-                entries.sort(key=lambda x: x[1])  # 按 FirstIndex 升序
+                entries.sort(key=lambda x: (x[1], x[0]))  # 与 SSMT 的稳定顺序一致
 
                 comp_map: Dict[int, str] = {}
                 reverse_map: Dict[str, int] = {}
                 info_map: Dict[int, tuple] = {}
 
-                for comp_index, (folder_name, _) in enumerate(entries):
+                persisted = persisted_components.get(draw_ib, {})
+                valid_folders = {folder for folder, _ in entries}
+                assigned = {}
+                used = set()
+                if isinstance(persisted, dict):
+                    for index, folder in persisted.items():
+                        if str(index).isascii() and str(index).isdigit() and isinstance(folder, str) and folder in valid_folders and folder not in assigned:
+                            number = int(index)
+                            if number not in used:
+                                assigned[folder] = number
+                                used.add(number)
+                next_index = 0
+                for folder_name, _ in entries:
+                    comp_index = assigned.get(folder_name)
+                    if comp_index is None:
+                        while next_index in used:
+                            next_index += 1
+                        comp_index = next_index
+                        used.add(comp_index)
                     comp_map[comp_index] = folder_name
                     reverse_map[folder_name] = comp_index
                     # 重新解析以获取 index_count
@@ -183,18 +234,10 @@ class WorkSpaceModel:
                 self.lod_reverse[lod_name][draw_ib] = reverse_map
                 self.lod_component_info[lod_name][draw_ib] = info_map
 
-            # 构建该 LOD 的显示名称列表
+            # 显示别名不参与解析；旧对象和蓝图仍可用原来的名称定位同一目录。
             for draw_ib in sorted(self.lod_components[lod_name].keys()):
-                alias = self.drawib_aliases.get(draw_ib, "")
                 for comp in sorted(self.lod_components[lod_name][draw_ib].keys()):
-                    short_name = f"{draw_ib}-{comp}"
-                    if lod_name:
-                        full_name = f"{lod_name}.{short_name}"
-                    else:
-                        full_name = short_name
-                    if alias:
-                        full_name += f".{alias}"
-                    self.all_display_names.append(full_name)
+                    self.all_display_names.append(self.get_display_name(lod_name, draw_ib, comp))
 
         # 读取根目录 Config.json（兼容旧版无 LOD 结构时的别名）
         root_aliases = self._read_config_json(self.workspace_path)
@@ -257,7 +300,8 @@ class WorkSpaceModel:
     def get_display_name(self, lod_name: str, draw_ib: str, component: int) -> str:
         '''返回用于物体命名的显示名称，如果有别名则附上。'''
         new_name = self.get_new_submesh_name(lod_name, draw_ib, component)
-        alias = self.drawib_aliases.get(draw_ib, "")
+        folder_name = self.get_old_folder_name(lod_name, draw_ib, component)
+        alias = self.component_aliases.get(lod_name, {}).get(folder_name) or self.drawib_aliases.get(draw_ib, "")
         if alias:
             return f"{new_name}.{alias}"
         return new_name

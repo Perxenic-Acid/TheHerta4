@@ -63,3 +63,13 @@ FileExistsError: [WinError 183] 当文件已存在时，无法创建该文件。
 
 所以暂时删掉所有旧的非镜像工作流代码，等待后续测试
 
+
+## Component 别名兼容
+
+SSMT 标记页在各 LOD 的 `ComponentAliases.json` 保存 `{实际提取目录名: 别名}`。
+`WorkSpaceModel` 使用该文件更新新导入物体与蓝图列表的显示后缀，不修改目录或已有对象。
+别名可包含点号，路径解析仍只依赖 LOD、DrawIB 和 Component 编号；旧长名、短名与旧
+别名均保留识别。编号优先沿用 `DrawIB-Component.json`，缺失项才按扫描顺序补齐。
+
+CPU 回归：`python tools/test_component_aliases.py`。测试覆盖旧工作空间、各 LOD 独立别名、
+持久化映射优先级和蓝图 LOD 选择，不代替 Blender 内实际导入 / 导出验收。
