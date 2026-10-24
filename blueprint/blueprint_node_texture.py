@@ -8,6 +8,7 @@ import os
 import bpy
 
 from ..utils.translate_utils import iface_
+from ..common.addon_preferences import texture_node_previews_enabled
 from ..common.texture_naming import (
     default_texture_filename,
     default_texture_resource_name,
@@ -113,6 +114,9 @@ class SSMTNode_Texture(SSMTNodeBase):
         return path
 
     def _get_preview_image(self):
+        # 关闭时连文件探测和图片加载都跳过；不删除可能同时被材质使用的图像。
+        if not texture_node_previews_enabled():
+            return None
         preview_path = self._resolve_preview_path()
         if not preview_path:
             return None
@@ -177,6 +181,9 @@ class SSMTNode_Texture(SSMTNodeBase):
 
         if not self.texture_hash:
             layout.label(text=iface_("Hash 为空时无法生成配置"), icon='ERROR')
+
+        if not texture_node_previews_enabled(context):
+            return
 
         # 预览绘制必须容错：draw 上下文里任何异常都不应破坏节点本身
         try:

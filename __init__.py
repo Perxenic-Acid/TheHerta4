@@ -3,11 +3,13 @@ import bpy
 
 from .common import global_properties
 from .common import gimi_body_outline
+from .common.addon_preferences import redraw_node_editors
 from .utils import translate_utils
 
 
 # UI界面
 from .ui import ui_panel_basic
+from .ui import ui_panel_settings
 from .ui import ui_panel_model
 from .sword import ui_panel_sword
 from .ui import ui_func_import_ssmt
@@ -84,6 +86,13 @@ class HertaUpdatePreference(bpy.types.AddonPreferences):
     bl_label = "TheHerta 更新器"
     bl_idname = __package__
 
+    texture_node_previews: bpy.props.BoolProperty(
+        name="贴图节点启用预览功能",
+        description="在蓝图贴图节点中显示图片预览；大型工程可关闭以减少图片加载和预览开销",
+        default=False,
+        update=redraw_node_editors,
+    ) # type: ignore
+
     
     auto_check_update: bpy.props.BoolProperty(
         name="自动检查更新",
@@ -118,6 +127,7 @@ class HertaUpdatePreference(bpy.types.AddonPreferences):
         max=59) # type: ignore
     def draw(self, context):
         layout = self.layout
+        layout.prop(self, "texture_node_previews")
         layout.prop(self, "auto_check_update")
         addon_updater_ops.update_settings_ui(self, context)
 
@@ -151,6 +161,7 @@ def _register_steps():
     yield blueprint_node_base.register
     yield blueprint_node_group.register
     yield ui_panel_basic.register
+    yield ui_panel_settings.register
     yield ui_panel_model.register
     yield ui_panel_sword.register
     yield ui_func_import_ssmt.register
@@ -202,6 +213,7 @@ def unregister():
         ui_func_import_ssmt.unregister,
         ui_panel_sword.unregister,
         ui_panel_model.unregister,
+        ui_panel_settings.unregister,
         ui_panel_basic.unregister,
         blueprint_node_base.unregister,
         _unregister_updater,
